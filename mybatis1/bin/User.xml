@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 区分同名的查询语句，namespace.id -->
+<!-- #{} 占位符 如果是基本数据类型  可以随便写  如果是引用类型 要写pojo的属性.属性...-->
+<mapper namespace="test">
+  <select id="findUserById" parameterType="int" resultType="pojo.User">
+     <!-- sql语句 -->
+     select * from user where id = #{id}
+  </select>
+  
+  <!-- 根据用户名查询多条记录 -->
+  <!-- ${} 字符拼接  如果传入的数据类型是基本类型，括号中只能写value -->
+  <select id="findUserByUserName" parameterType="java.lang.String" resultType="pojo.User">
+     select * from user where username like '%${value}%'
+  </select>
+  
+  <!-- 增加 -->
+  
+  <!-- 对于插入操作，自动生成的主键，可以通过sql函数得到  LAST_INSERT_ID（） ,在完成插入后，把他放回到pojo 主键中 -->
+  <insert id="insertUser" parameterType="pojo.User">
+     <selectKey order="AFTER" keyProperty="id" resultType="java.lang.Integer">
+         <!-- order 是在插入前 查询 还是插入后 ， 对于自动生成的主键是 after ， 先插入才在数据库中加入自动生成的主键
+         对于uuid生成的 字符串 则不能，  是在数据库中先生成，然后插入时加入的 ，所以LAST_INSERT_ID 能够查到，而随机生成的Int id 无法先查到 
+         BEFORE-->
+         select LAST_INSERT_ID()
+     </selectKey>
+     insert into user(username,birthday,sex,address) values(#{username},#{birthday},#{sex},#{address})
+  </insert>
+  
+  
+  <!-- 删除 -->
+  
+  <delete id="deleteUserById" parameterType="java.lang.Integer">
+    delete  from user where id = #{id}
+  </delete>
+  
+  <!-- 更新 -->
+  
+  <update id="updateUserNameById" parameterType="pojo.User">
+     update user set username = #{username} where id = #{id}
+  </update>
+</mapper>

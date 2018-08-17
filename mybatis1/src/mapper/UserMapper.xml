@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<!-- //mybatis的动态代理dao方式, 如果只是单纯的增删改查，那么这些dao实现类就不用自己再写，Mybatis已经写好了， /** 
+	* 只要符合一定的规则 ，就可以使用 * 映射文件的namespace 要 等于 接口的全路径名称 * 接口名 和 映射文件名相同，且接口和映射文件在同一个目录下 
+	* sql语句的id 和 方法名相同 * 传入参数类型和返回值的参数类型 映射文件和接口方法的一样 * * */ -->
+<mapper namespace="mapper.UserMapper">
+
+	<!-- 根据id 和 name 查询 -->
+
+
+	<sql id="user_nameSex">
+		<where>
+			<if test="user.username != null">
+				and username like '%${user.username}%'
+			</if>
+
+			<if test="user.sex != null">
+				and sex = '${user.sex}'
+			</if>
+		</where>
+	</sql>
+	<select id="findUserById" parameterType="java.lang.Integer"
+		resultType="pojo.User">
+		select * from user where id = #{id}
+	</select>
+
+
+	<select id="findUserByUserName" parameterType="java.lang.String"
+		resultType="pojo.User">
+		select * from user where username = #{username}
+	</select>
+
+
+	<!-- 动态sql -->
+
+	<!-- 条件拼接 if where foreach 标签 -->
+	<!-- 手动拼接 条件固定 <select id="findUserByVo" parameterType="pojo.Vo" resultType="pojo.User"> 
+		select * from user where 1=1 and username like '%${user.username}%' and sex='${user.sex}' 
+		</select> -->
+
+	<!-- where if 标签拼接条件 条件不固定时 会自动拼接where 关键字 并且去掉第一个查询条件的and -->
+
+	<select id="findUserByVo" parameterType="pojo.Vo" resultType="pojo.User">
+		select * from user
+		<!-- 
+		<where>
+			<if test="user.username != null">
+				and username like '%${user.username}%'
+			</if>
+
+			<if test="user.sex != null">
+				and sex = '${user.sex}'
+			</if>
+		</where>
+        -->
+        
+		<!-- 可以将where 这一块的代码移到sql标签中，增加复用性，减少重复代码 -->
+		
+		<include refid="user_nameSex"></include>
+	</select>
+
+
+    <!-- 或查询  or  在有多个条件的或查询中， 最好选择用集合 In 来表示， or效率很慢 -->
+    <!-- foreach 标签的使用 -->
+    <select id="findUserByIds" parameterType="pojo.Vo" resultType="pojo.User">
+    select * from user
+    
+    <!-- colleaction 容器集合变量名  item 遍历的每一项放入的变量,foreach内部 将这个变量拼接到sql语句  open 开头拼接的字符串 separator 集合中
+    各个项的分隔符,close 最后拼接的字符串 
+    将读取的集合中的项一个一个拼接起来-->
+    <if test="Ids != null">
+    <where>
+    <foreach collection="Ids" item="id" open="id in (" separator="," close=")">
+      #{id}
+    </foreach>
+    </where>
+    </if>
+    </select>
+    
+   <!-- 关联查询 -->
+   
+   
+   <!-- 订单和用户的 一对一的关系 -->
+   <resultMap type="pojo.Orders" id="findUserAndOrderMap">
+       <id column="id" property="id"/> <!-- 主键 -->
+       <result column="user_id" property="userId"/> <!-- 其他属性 -->
+       <result column="number" property="number"/>
+       <result column="createtime" property="createtime"/>
+       <result column="note" property="note"/>
+       
+       
+       <!-- 关联 一对一   -->
+       <association property="user" javaType="pojo.User"></association>
+   </resultMap>
+   
+   <select id="findUserAndOrder" resultMap="findUserAndOrderMap">
+      select a.*,b.id uid,b.user_id,b.number,b.createtime,b.note 
+      from user a,orders b
+      where a.id = b.user_id
+   </select>
+    
+   <!-- 用户和订单 的一对多的关系 -->
+   
+   
+   <resultMap type="pojo.User" id="findOrderAndUserMap">
+   
+    <id column="id" property="id"/>
+    <result column="username" property="username"/>
+    <result column="sex" property="sex"/>
+    <result column="birthday" property="birthday"/>
+    <result column="address" property="address"/>
+    
+   
+    <!-- 用户和订单的一对多的关联关系 -->
+    <collection property="orders" ofType="pojo.Orders">
+       <id column="id" property="id"/>
+       <result column="user_id" property="userId"/>
+       <result column="number" property="number"/>
+       <result column="createtime" property="createtime"/>
+       <result column="note" property="note"/>
+    </collection>
+   </resultMap>
+   
+   <select id="findOrderAndUser" resultMap="findOrderAndUserMap">
+      select a.*,b.id uid,b.user_id,b.number,b.createtime,b.note 
+      from user a,orders b
+      where a.id = b.user_id
+   </select>
+   
+   
+</mapper>
